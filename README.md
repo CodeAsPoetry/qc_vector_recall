@@ -82,7 +82,7 @@
    1. 所有 query 的 json文件：queies_list.json
    2. 所有 doc 的 json文件：docs_list.json
 2. [模型下载脚本](http://www.bing.com)
-3. [模型推理脚本](https://www.bing.com)
+3. [模型推理脚本](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/get_embedding_by_gte.py)
    1. 切分 batch 进行推理，按照batch保存npy文件
    2. 整体合并成大的 npy 文件
 4. 最终得到的嵌入向量压缩包
@@ -129,8 +129,9 @@
 
    1. 对应测试集文件中的 prompt_1、prompt_2 字段值
    2. 按照huggerface上 Qwen-72b-Chat 的推理服务，获取推理结果
-      1. held in 测试集，Qwen-72b-Chat 推理结果，pass
-      2. held out 测试集，Qwen-72b-Chat 推理结果，pass
+      1. [推理脚本](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/get_qwen2_70b_predict.py)
+      2. held in 测试集，Qwen-72b-Chat 推理结果，pass
+      3. held out 测试集，Qwen-72b-Chat 推理结果，pass
    3. 实验结果
       1. held in 上，逐条计算每个 query 在对应给出的 doc 候选范围中，三分doc的查准和查全，再在 query 粒度上平均。最终，3分 doc 的**查准0.995** ，**查全0.79**；**pair_wise 比较的准确率 100%**
       2. held in 上，逐条计算每个 query 在对应给出的 doc 候选范围中，三分doc的查准和查全，再在 query 粒度上平均。最终，3分 doc 的**查准0.9902** ，**查全0.7433**；

@@ -10,12 +10,12 @@ from modelscope import GenerationConfig
 
 
 # Note: The default behavior now has injection attack prevention off.
-tokenizer = AutoTokenizer.from_pretrained("/chatgpt_nas/33.59.0.139_backup/online/duyiyang.dyy/models/qwen-72b-chat", revision='master', trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained("/Users/codeaspoetry/models/qwen-72b-chat", revision='master', trust_remote_code=True)
 
 # use bf16
 # model = AutoModelForCausalLM.from_pretrained("qwen/Qwen-72B-Chat", device_map="auto", trust_remote_code=True, bf16=True).eval()
 # use fp16
-model = AutoModelForCausalLM.from_pretrained("/chatgpt_nas/33.59.0.139_backup/online/duyiyang.dyy/models/qwen-72b-chat", device_map="auto", trust_remote_code=True, fp16=True).eval()
+model = AutoModelForCausalLM.from_pretrained("/Users/codeaspoetry/models/qwen-72b-chat", device_map="auto", trust_remote_code=True, fp16=True).eval()
 # use cpu only
 # model = AutoModelForCausalLM.from_pretrained("qwen/Qwen-72B-Chat", device_map="cpu", trust_remote_code=True).eval()
 # use auto mode, automatically select precision based on the device.
