@@ -4,7 +4,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
 import json
 from sentence_transformers import SentenceTransformer
 from modelscope import snapshot_download
-model_dir = "/online/pangchengjie.pcj/models/gte_Qwen2-7B-instruct/iic/gte_Qwen2-7B-instruct"
+model_dir = "/Users/codeaspoetry/models/gte_Qwen2-7B-instruct/iic/gte_Qwen2-7B-instruct"
 
 model = SentenceTransformer(model_dir)
 # In case you want to reduce the maximum length:

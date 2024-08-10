@@ -70,24 +70,23 @@
 3. 除上之外，剩余的是训练集，2891 条 query，其中有 100 条query是held in，各自对应的doc，如果held in取出，则进行剔除。
 4. 数据切分脚本(包含切分数据集、验证切分是否正确、落盘文件化等)，代码链接：[数据切分脚本](http://www.bing.com)
 5. 数据集：
-   1. 训练集：
-   2. held in 测试集：
-   3. held out 测试集：
+   1. 训练集：[train_dev_data.jsonl](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/train_dev_data.jsonl)
+   2. held in 测试集：[held_in_eval.jsonl](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/held_in_eval.jsonl)
+   3. held out 测试集：[held_out_eval.jsonl](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/held_out_eval.jsonl)
 
 ## 现成模型能力边界探查
 
-###中文 C-MTEB 榜单第二名：gte-Qwen2-7B-instruct
+###中文 C-MTEB 榜单第二名(gte-Qwen2-7B-instruct)
 
 1. 按照 huggerface 给出的推理脚本，将 **2991** 个query，**23410** 个 doc 送进去进行向量化，
-   1. 所有 query 的 json文件：queies_list.json
-   2. 所有 doc 的 json文件：docs_list.json
-2. [模型下载脚本](http://www.bing.com)
+   1. 所有 query 的 json文件：[queies_list.json](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/queies_list.json)
+   2. 所有 doc 的 json文件：[docs_list.json](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/docs_list.json)
 3. [模型推理脚本](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/get_embedding_by_gte.py)
    1. 切分 batch 进行推理，按照batch保存npy文件
    2. 整体合并成大的 npy 文件
 4. 最终得到的嵌入向量压缩包
-   1. 所有 query 向量嵌入表示矩阵(行索引和queies_list.json的文件行号一一对应)，矩阵shape为(2981，3584)：[querise向量npy文件](http://www.bing.com)
-   2. 所有 doc 向量嵌入表示矩阵(行索引和docs_list.json的文件行号一一对应)，矩阵shape为(19582，3584)：[docs向量npy文件](http://www.bing.com)
+   1. 所有 query 向量嵌入表示矩阵(行索引和queies_list.json的文件行号一一对应)，矩阵shape为(2981，3584)：[querise向量npy文件](https://github.com/CodeAsPoetry/qc_vector_recall/tree/main/query_embeddings)
+   2. 所有 doc 向量嵌入表示矩阵(行索引和docs_list.json的文件行号一一对应)，矩阵shape为(19582，3584)：[docs向量npy文件](https://github.com/CodeAsPoetry/qc_vector_recall/tree/main/document_embeddings)
 5. 算分，计算recall@20的指标
    1. held out 测试集，100条query，逐 query 计算 recall@20，整体在 query 粒度上算平均，**0.1667**
    2. held out 测试集，根据数据集中规定的某条 query 对应的多个候选doc的范围，获取相应匹配分，把其中所有1分的算匹配平均值，所有3分的算匹配平均值，3分集合匹配平均分大于1分集合匹配平均分，这种情形占比 **94%**
@@ -130,8 +129,8 @@
    1. 对应测试集文件中的 prompt_1、prompt_2 字段值
    2. 按照huggerface上 Qwen-72b-Chat 的推理服务，获取推理结果
       1. [推理脚本](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/get_qwen2_70b_predict.py)
-      2. held in 测试集，Qwen-72b-Chat 推理结果，pass
-      3. held out 测试集，Qwen-72b-Chat 推理结果，pass
+      2. held in 测试集，Qwen-72b-Chat 推理结果，[held_in_eval_output.jsonl](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/held_in_eval_output.jsonl)
+      3. held out 测试集，Qwen-72b-Chat 推理结果，[held_out_eval_output.jsonl](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/held_out_eval_output.jsonl)
    3. 实验结果
       1. held in 上，逐条计算每个 query 在对应给出的 doc 候选范围中，三分doc的查准和查全，再在 query 粒度上平均。最终，3分 doc 的**查准0.995** ，**查全0.79**；**pair_wise 比较的准确率 100%**
       2. held in 上，逐条计算每个 query 在对应给出的 doc 候选范围中，三分doc的查准和查全，再在 query 粒度上平均。最终，3分 doc 的**查准0.9902** ，**查全0.7433**；
