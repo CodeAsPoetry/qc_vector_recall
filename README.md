@@ -61,14 +61,14 @@
 
    ![Doc Length Distribution](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/images/pic_3.png)
 
-6. 数据分析脚本(包含去重、统计、绘图等)，代码链接：[数据分析脚本](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/query_content_vector_recall.ipynb) 代码中的“数据分析”部分
+6. 数据分析脚本(包含去重、统计、绘图等)，代码链接：[工作流脚本](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/query_content_vector_recall.ipynb) 代码中的“数据分析”部分
 
 ## 切分数据集
 
 1. held out 测试集，随机从 2991 条 query 中切分出 100 条 query ，将100条 query 对应的 doc 全部拿来，但如果 doc 同时还是作为训练集其他 query 的候选 doc ，则在训练集中该doc予以保留；
 2. held in 测试集，随机从 2891 (2991-100) 条 query 中选 100 条 query ，各取一条1分doc和3分doc；
 3. 除上之外，剩余的是训练集，2891 条 query，其中有 100 条query是held in，各自对应的doc，如果held in取出，则进行剔除。
-4. 数据切分脚本(包含切分数据集、验证切分是否正确、落盘文件化等)，代码链接：[数据切分脚本](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/query_content_vector_recall.ipynb) 代码中的“切分数据集”部分
+4. 数据切分脚本(包含切分数据集、验证切分是否正确、落盘文件化等)，代码链接：[工作流脚本](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/query_content_vector_recall.ipynb) 代码中的“切分数据集”部分
 5. 数据集：
    1. 训练集：[train_dev_data.jsonl](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/train_dev_data.jsonl)
    2. held in 测试集：[held_in_eval.jsonl](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/held_in_eval.jsonl)
@@ -100,7 +100,7 @@
 
 ### Qwen-72b-Chat
 
-1. 借助 Prompt 工程，对数据进行改造，适配 Qwen-72b-Chat 的任务范式，代码见：[数据切分脚本](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/query_content_vector_recall.ipynb)中的“prompt改造”
+1. 借助 Prompt 工程，对数据进行改造，适配 Qwen-72b-Chat 的任务范式，代码见：[工作流脚本](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/query_content_vector_recall.ipynb)中的“prompt改造”
 
    1. 模版一
 
