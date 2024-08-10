@@ -7,7 +7,7 @@
 
 3. 需要解决query和doc表征空间统一的问题，提升其可聚类性（如下图，从表征看c好于b好于a）
 
-   ![可聚性说明](/images/pic_1.jpeg)
+   ![可聚性说明](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/images/pic_1.png)
 
 4. 向量维度<=1024（越小越好）
 5. 模型不限制，可以做数据增强
@@ -45,7 +45,7 @@
 
 11. https://huggingface.co/spaces/mteb/leaderboard
 
-    ![Chinese mteb leaderboard](/images/pic_2.jpeg)
+    ![Chinese mteb leaderboard](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/images/pic_2.png)
 
 ## 数据分析
 
@@ -59,7 +59,7 @@
 
 5. 19582 个候选文档，长度分布：**最短24，最长4293，平均454.3，大量集中在 256～512 区间内，有 16532 个**
 
-   ![Doc Length Distribution](/images/pic_3.jpeg)
+   ![Doc Length Distribution](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/images/pic_3.png)
 
 6. 数据分析脚本(包含去重、统计、绘图等)，代码链接：[数据分析脚本](http://www.bing.com)
 
