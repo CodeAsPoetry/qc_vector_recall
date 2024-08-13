@@ -142,15 +142,10 @@
 
 ## 建模优化方案
 
-### 训练代码参考
-
-https://www.github.com/wangyuxinwhy/uniem
-
-
 ### 尽快拿结果(优先级提高)
 
 **采用 M3E 系列模型**
-
+0. 参考代码：https://www.github.com/wangyuxinwhy/uniem
 1. M3E-base：https://huggingface.co/moka-ai/m3e-base
 2. 按照 uniem 支持三种任务，构建数据：
    1. Pair 句对样本(text, text_pos)
@@ -193,15 +188,15 @@ https://www.github.com/wangyuxinwhy/uniem
 
 6. 回顾目标
    1. held out 测试集中，query 是独立于整个训练验证的，在整个开发集上 recall@20 指标达到 0.862，说明模型是在一定的泛化性的前提下尽量提升向量召回3分结果
-   2. 需要解决向量量化（float32转int8）的效果，量化方案可自选
+   2. 需要解决向量量化（float32转int8）的效果，时间受限，量化工作暂未开展，但已有工程探索，具体查看[进一步思路]()
    3. 任务二在一定程度上从侧面反映query和doc表征空间统一的问题，在进行模型探索上，有一定建设
-   4. 目前向量维度 768，小于1024（越小越好）
+   4. 目前向量维度 768，小于1024（越小越好），后边可以尝试在其上进行主成分分析PCA等其他降维学习算法，也包括降到2维或着3维可视化，然后进行分析，为后边持续优化建立 sense
    5. 出于时间受限，模型暂未进行数据增强，若进行，指标将会进一步得到提高
 
 ### 进一步思路(优先级往后排一下)
 
 **采用 gte-Qwen2-7B-instruct 基座，将切分出来的训练集，按照 Piccolo2 这篇论文的思路，利用多任务混合loss的思路，并采用“俄罗斯套娃”的学习方式，进行训练优化。**
-
+0. 参考代码：https://github.com/modelscope/ms-swift
 1. gte-Qwen2-7B-instruct 基座：采用了文章提到的 improved contrastive loss ，经过预训练和微调两个阶段的对比学习得到的
 2. Piccolo2 中，针对 Retrieval and Reranking 任务，利用 standard InfoNCE loss ；针对 STS and PairClassification 任务，利用 cosent loss ；针对 Classification and Clustering ，利用分类 $L_{cls}$ 损失，形式和 InfoNCE loss 一致，但没有 batch-in negatives，因为很容易在一个batch内有属于同一类的多条数据，造成错误。
 3. Piccolo2 中利用了 Dimension Scaling up 和 MRL Training 机制，尽管在增大维度没有预期提升收益，以及不管是否采用“ MRL Training(俄罗斯套娃机制)”，性能也几乎没变。**但采用 MRL Training 机制，在维度上鲁棒，即与单维训练相比，它能够支持灵活的维度长度，而不会牺牲性能。这符合我们目标中的第 4 点**
@@ -209,4 +204,10 @@ https://www.github.com/wangyuxinwhy/uniem
    1. 我们**本身就是一个  Retrieval(检索) 任务**，利用Piccolo2中的 “standard InfoNCE loss ”或者gte-Qwen2-7B-instruct中的“ improved contrastive loss ”
    2. Qwen-72b-Chat 探查时，发现针对该数据集，进行pair_wise 比较的准确率 100%，**利用prompt工程对多个匹配pair对比较**，构造出 PairClassification 任务，比如“前提是(query1，doc1)和(query2，doc2)都是对应匹配的，输出(query1，doc1)匹配程度和(query2，doc2)的匹配程度那个更大”，这样就可以采用 cosent loss 
    3. 根据 query 和相关匹配的 doc ，类似目标第3点的图示，构建聚类任务，利用分类 $L_{cls}$ 损失
-
+5. modelscope/ms-swift暂不直接支持gte-Qwen2-7B-instruct，但已支持Qwen2-7B-instruct，支持INT4/INT8量化，根据上述几点改造对应的loss，然后进行自定义训练和推理即可
+   1. [支持的模型和数据集](https://github.com/modelscope/ms-swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md)
+   2. [LLM微调文档](https://github.com/modelscope/ms-swift/blob/main/docs/source/LLM/LLM%E5%BE%AE%E8%B0%83%E6%96%87%E6%A1%A3.md)
+   3. [自定义与拓展](https://github.com/modelscope/ms-swift/blob/main/docs/source/LLM/%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%8E%E6%8B%93%E5%B1%95.md)
+   4. 采用 qlora , 在 examples/pytorch/llm 下，执行 https://github.com/modelscope/ms-swift/blob/main/examples/pytorch/llm/scripts/qwen_7b_chat/qlora/sft.sh 脚本，脚本支持量化，目前已跑通基于 Qwen2-7B-instruct 下的微调实验
+   5. 适配 gte-Qwen2-7B-instruct，包括使用俄罗斯套娃学习机制，需要修改loss ，对应py文件具体位置 https://github.com/modelscope/ms-swift/blob/main/swift/trainers/trainers.py 
+      ![改进loss位置](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/images/pic_5.png)
