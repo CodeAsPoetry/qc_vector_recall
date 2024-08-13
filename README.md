@@ -142,7 +142,7 @@
 
 ## 建模优化方案
 
-### 总体思路
+### 总体思路(优先级往后排一下)
 
 **采用 gte-Qwen2-7B-instruct 基座，将切分出来的训练集，按照 Piccolo2 这篇论文的思路，利用多任务混合loss的思路，并采用“俄罗斯套娃”的学习方式，进行训练优化。**
 
@@ -159,9 +159,47 @@
 https://www.github.com/wangyuxinwhy/uniem
 
 
+### 尽快拿结果(优先级提高)
 
+**采用 M3E 系列模型**
 
+1. M3E-base：https://huggingface.co/moka-ai/m3e-base
+2. 按照 uniem 支持三种任务，构建数据：
+   1. Pair 句对样本(text, text_pos)
+   2. ScoredPair 带有分数的句对样本(text, text_pos, label=1.0), (text, text_neg, label=0.0)
+   3. Triplet 句子三元组，(text, text_pos, text_neg)
 
+3. 获取 M3E-base 模型推理向量，统计recall@20
+   1. held in 测试集上，recall@20 为 **0.625**；held out 测试集上，recall@20 为 **0.6**
 
+4. 进行 baseline 实验
+   1. 训练集所有样本构造 Pair(text, text_pos) 句对样本，获取每个query和对应的label为3分的样本对
+   2. 训练集所有样本构造 ScoredPair(text, text_pos, label=1.0), (text, text_neg, label=0.0) 带有分数的句对样本，获取每个query和对应的label为1分和3分的样本对
+   3. 训练集所有样本构造 Triplet(text, text_pos, text_neg) 句子三元组样本，针对每个query的每条1分doc和3分doc，加上query，两两组对
+   4. M3E-base 上，进行上面三个数据集的 finetune，每个数据集过1个epoch，三个epoch的学习率默认 5e-5
+      1. 第1个epoch，过了 Pair 句对，held in 测试集上，recall@20 为 **0.94**；held out 测试集上，recall@20 为 **0.853**
+      2. 第2个epoch，过了 ScoredPair 句对，held in 测试集上，recall@20 为 **0.92**；held out 测试集上，recall@20 为 **0.83**
+      3. 第3个epoch，过了 Triplet 三元组，held in 测试集上，recall@20 为 **0.97**；held out 测试集上，recall@20 为 **0.788**
+   5. 结论：
+      1. held in 指标逐渐上升，held out 指标却大幅下滑，上述策略存在过拟合，每个 query 和 doc 都见了太多次
+      2. ScoredPair 任务貌似并不好
+         1. 从训练loss上看，ScoredPair的loss大过 Pair 、Triplet 任务loss约 1个数量级，在训练集上，达到4～5之间，在验证集上，达到5～6之间；
+         2. 从数据分析上，1分doc和3分doc，可能更针对具体query，也就是说，来自不同的query对应的都是 1 分的多个doc，它们并不一定真正属于一类，可能并不具有统一的分值意义，对于模型并不友好
+         3. 三个任务，学习率都是 5e-5 不太合理，这三个任务彼此之间有关联的，学好Pair任务，显然可以辅助Triplet任务
 
-## 
+5. 进行模型优化
+   1. 随机挑选训练集中的 2/3 样本，构造 Pair(text, text_pos) 句对样本，获取每个query和对应的label为3分的样本对
+      1. 训练集：[finetune_m3e_5371_pair_train.json](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/data_v2/finetune_m3e_5371_pair_train.json)
+      2. 验证集：[]()
+   2. 训练集剩下的 1/3 样本，构造Triplet(text, text_pos, text_neg) 句子三元组样本
+      1. 训练集：[]()
+      2. 验证集：[]()
+   3. M3E-base 上，进行上面两个数据集的 finetune，考虑已采取控制每个query和doc出现的频次，可以多过epoch，每个数据集过3个epoch
+      1. [finetune 脚本]()
+      1. Pair 任务，学习率 5e-5，3个epoch，[训练log]()
+      2. Triplet 任务，学习率 1e-5，3个epoch，[训练log]()
+      3. 最终获取模型的嵌入向量
+         1. [queries向量]()，向量维度 768
+         2. [docs向量]()，向量维度 768
+      4. 指标，模型在 held in 测试集上，recall@20 为 **0.99**；held out 测试集上，recall@20 为 **0.862**
+
