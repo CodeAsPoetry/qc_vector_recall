@@ -142,18 +142,6 @@
 
 ## 建模优化方案
 
-### 总体思路(优先级往后排一下)
-
-**采用 gte-Qwen2-7B-instruct 基座，将切分出来的训练集，按照 Piccolo2 这篇论文的思路，利用多任务混合loss的思路，并采用“俄罗斯套娃”的学习方式，进行训练优化。**
-
-1. gte-Qwen2-7B-instruct 基座：采用了文章提到的 improved contrastive loss ，经过预训练和微调两个阶段的对比学习得到的
-2. Piccolo2 中，针对 Retrieval and Reranking 任务，利用 standard InfoNCE loss ；针对 STS and PairClassification 任务，利用 cosent loss ；针对 Classification and Clustering ，利用分类 $L_{cls}$ 损失，形式和 InfoNCE loss 一致，但没有 batch-in negatives，因为很容易在一个batch内有属于同一类的多条数据，造成错误。
-3. Piccolo2 中利用了 Dimension Scaling up 和 MRL Training 机制，尽管在增大维度没有预期提升收益，以及不管是否采用“ MRL Training(俄罗斯套娃机制)”，性能也几乎没变。**但采用 MRL Training 机制，在维度上鲁棒，即与单维训练相比，它能够支持灵活的维度长度，而不会牺牲性能。这符合我们目标中的第 4 点**
-4. 如何利用 2891 条 query ，万量级的doc，构造多任务？
-   1. 我们**本身就是一个  Retrieval(检索) 任务**，利用Piccolo2中的 “standard InfoNCE loss ”或者gte-Qwen2-7B-instruct中的“ improved contrastive loss ”
-   2. Qwen-72b-Chat 探查时，发现针对该数据集，进行pair_wise 比较的准确率 100%，**利用prompt工程对多个匹配pair对比较**，构造出 PairClassification 任务，比如“前提是(query1，doc1)和(query2，doc2)都是对应匹配的，输出(query1，doc1)匹配程度和(query2，doc2)的匹配程度那个更大”，这样就可以采用 cosent loss 
-   3. 根据 query 和相关匹配的 doc ，类似目标第3点的图示，构建聚类任务，利用分类 $L_{cls}$ 损失
-
 ### 训练代码参考
 
 https://www.github.com/wangyuxinwhy/uniem
@@ -190,16 +178,35 @@ https://www.github.com/wangyuxinwhy/uniem
 5. 进行模型优化
    1. 随机挑选训练集中的 2/3 样本，构造 Pair(text, text_pos) 句对样本，获取每个query和对应的label为3分的样本对
       1. 训练集：[finetune_m3e_5371_pair_train.json](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/data_v2/finetune_m3e_5371_pair_train.json)
-      2. 验证集：[]()
+      2. 验证集：[finetune_m3e_100_pair_valid_new_1.json](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/data_v2/finetune_m3e_100_pair_valid_new_1.json)
    2. 训练集剩下的 1/3 样本，构造Triplet(text, text_pos, text_neg) 句子三元组样本
-      1. 训练集：[]()
-      2. 验证集：[]()
+      1. 训练集：[finetune_m3e_13215_triplet_train.json](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/data_v2/finetune_m3e_13215_triplet_train.json)
+      2. 验证集：[finetune_m3e_100_triplet_valid_new_1.json](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/data_v2/finetune_m3e_100_triplet_valid_new_1.json)
    3. M3E-base 上，进行上面两个数据集的 finetune，考虑已采取控制每个query和doc出现的频次，可以多过epoch，每个数据集过3个epoch
-      1. [finetune 脚本]()
-      1. Pair 任务，学习率 5e-5，3个epoch，[训练log]()
-      2. Triplet 任务，学习率 1e-5，3个epoch，[训练log]()
+      1. [finetune 脚本](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/finetune_m3e.py)
+      1. Pair 任务，学习率 5e-5，3个epoch，[训练log](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/finetune_m3e_base_pair_3epoch_data_v2.log)
+      2. Triplet 任务，学习率 1e-5，3个epoch，[训练log](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/finetune_m3e_base_triplet_3epoch_data_v2.log)
       3. 最终获取模型的嵌入向量
-         1. [queries向量]()，向量维度 768
-         2. [docs向量]()，向量维度 768
+         1. [queries向量](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/query_embeddings_m3e_triplet_3_data_v2.tar.gz)，向量维度 768
+         2. [docs向量](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/document_embeddings_m3e_triplet_3_data_v2.tar.gz)，向量维度 768
       4. 指标，模型在 held in 测试集上，recall@20 为 **0.99**；held out 测试集上，recall@20 为 **0.862**
+
+6. 回顾目标
+   1. held out 测试集中，query 是独立于整个训练验证的，在整个开发集上 recall@20 指标达到 0.862，说明模型是在一定的泛化性的前提下尽量提升向量召回3分结果
+   2. 需要解决向量量化（float32转int8）的效果，量化方案可自选
+   3. 任务二在一定程度上从侧面反映query和doc表征空间统一的问题，在进行模型探索上，有一定建设
+   4. 目前向量维度 768，小于1024（越小越好）
+   5. 出于时间受限，模型暂未进行数据增强，若进行，指标将会进一步得到提高
+
+### 进一步思路(优先级往后排一下)
+
+**采用 gte-Qwen2-7B-instruct 基座，将切分出来的训练集，按照 Piccolo2 这篇论文的思路，利用多任务混合loss的思路，并采用“俄罗斯套娃”的学习方式，进行训练优化。**
+
+1. gte-Qwen2-7B-instruct 基座：采用了文章提到的 improved contrastive loss ，经过预训练和微调两个阶段的对比学习得到的
+2. Piccolo2 中，针对 Retrieval and Reranking 任务，利用 standard InfoNCE loss ；针对 STS and PairClassification 任务，利用 cosent loss ；针对 Classification and Clustering ，利用分类 $L_{cls}$ 损失，形式和 InfoNCE loss 一致，但没有 batch-in negatives，因为很容易在一个batch内有属于同一类的多条数据，造成错误。
+3. Piccolo2 中利用了 Dimension Scaling up 和 MRL Training 机制，尽管在增大维度没有预期提升收益，以及不管是否采用“ MRL Training(俄罗斯套娃机制)”，性能也几乎没变。**但采用 MRL Training 机制，在维度上鲁棒，即与单维训练相比，它能够支持灵活的维度长度，而不会牺牲性能。这符合我们目标中的第 4 点**
+4. 如何利用 2891 条 query ，万量级的doc，构造多任务？
+   1. 我们**本身就是一个  Retrieval(检索) 任务**，利用Piccolo2中的 “standard InfoNCE loss ”或者gte-Qwen2-7B-instruct中的“ improved contrastive loss ”
+   2. Qwen-72b-Chat 探查时，发现针对该数据集，进行pair_wise 比较的准确率 100%，**利用prompt工程对多个匹配pair对比较**，构造出 PairClassification 任务，比如“前提是(query1，doc1)和(query2，doc2)都是对应匹配的，输出(query1，doc1)匹配程度和(query2，doc2)的匹配程度那个更大”，这样就可以采用 cosent loss 
+   3. 根据 query 和相关匹配的 doc ，类似目标第3点的图示，构建聚类任务，利用分类 $L_{cls}$ 损失
 
