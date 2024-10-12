@@ -10,6 +10,7 @@
    ![可聚性说明](https://github.com/CodeAsPoetry/qc_vector_recall/blob/main/images/pic_1.png)
 
 4. 向量维度<=1024（越小越好）
+
 5. 模型不限制，可以做数据增强
 
 ## 数据
@@ -145,8 +146,11 @@
 ### 尽快拿结果(优先级提高)
 
 **采用 M3E 系列模型**
+
 0. 参考代码：https://www.github.com/wangyuxinwhy/uniem
+
 1. M3E-base：https://huggingface.co/moka-ai/m3e-base
+
 2. 按照 uniem 支持三种任务，构建数据：
    1. Pair 句对样本(text, text_pos)
    2. ScoredPair 带有分数的句对样本(text, text_pos, label=1.0), (text, text_neg, label=0.0)
